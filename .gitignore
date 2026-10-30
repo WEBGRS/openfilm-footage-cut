@@ -1,0 +1,4 @@
+out/
+*.log
+cover/*.png
+node_modules/

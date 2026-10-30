@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* 1600x900 cover: a pile of clips on the left, the shots picked for each line on the right */
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1600px; height: 900px; }
+  body { background: #f4f1ea; font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif; color: #1d1b18; position: relative; overflow: hidden; }
+  .clip { position: absolute; width: 190px; height: 112px; border: 3px solid #1d1b18; border-radius: 14px; background: #fff; overflow: hidden; }
+  .clip i { position: absolute; background: #d9d3c6; }
+  .clip.used { border-color: #e0572d; }
+  .clip.dim { opacity: 0.45; }
+  .arrow { position: absolute; left: 760px; top: 420px; width: 90px; height: 4px; background: #1d1b18; border-radius: 2px; }
+  .arrow::after { content: ""; position: absolute; right: -4px; top: -10px; border-left: 20px solid #1d1b18; border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+  .line { position: absolute; left: 900px; height: 22px; border-radius: 11px; background: #1d1b18; }
+  .shot { position: absolute; left: 900px; height: 150px; border: 3px solid #e0572d; border-radius: 16px; background: #fff; overflow: hidden; }
+  .shot i { position: absolute; background: #d9d3c6; }
+</style>
+</head>
+<body>
+  <div id="pile"></div>
+  <div class="arrow"></div>
+  <div id="cut"></div>
+  <script>
+    // Six clips with a simple shape each; three are used
+    const shapes = [
+      { l: 30, t: 30, w: 60, h: 60, r: '50%' }, { l: 20, t: 50, w: 140, h: 40, r: '8px' }, { l: 70, t: 10, w: 80, h: 80, r: '8px' },
+      { l: 40, t: 40, w: 100, h: 30, r: '15px' }, { l: 60, t: 20, w: 70, h: 70, r: '50%' }, { l: 10, t: 60, w: 160, h: 30, r: '4px' },
+    ];
+    const used = [0, 2, 4];
+    shapes.forEach((s, i) => {
+      const c = document.createElement('div');
+      c.className = 'clip' + (used.includes(i) ? ' used' : ' dim');
+      c.style.left = (104 + (i % 3) * 210) + 'px';
+      c.style.top = (250 + Math.floor(i / 3) * 140 + (i % 2) * 18) + 'px';
+      const sh = document.createElement('i');
+      Object.assign(sh.style, { left: s.l + 'px', top: s.t + 'px', width: s.w + 'px', height: s.h + 'px', borderRadius: s.r });
+      c.appendChild(sh);
+      document.getElementById('pile').appendChild(c);
+    });
+    // Each line of narration over the shot picked for it
+    const widths = [[150, 220], [110, 190], [170, 206]];
+    let x = 880;
+    used.forEach((k, j) => {
+      const [lw, sw] = widths[j];
+      const line = document.createElement('div');
+      line.className = 'line';
+      Object.assign(line.style, { left: x + 'px', top: '300px', width: lw + 'px', opacity: String(1 - j * 0.2) });
+      const shot = document.createElement('div');
+      shot.className = 'shot';
+      Object.assign(shot.style, { left: x + 'px', top: '345px', width: (sw - 14) + 'px' });
+      const s = shapes[k];
+      const sh = document.createElement('i');
+      Object.assign(sh.style, { left: (s.l * 1.0) + 'px', top: (s.t * 1.2) + 'px', width: (s.w * 1.0) + 'px', height: (s.h * 1.0) + 'px', borderRadius: s.r });
+      shot.appendChild(sh);
+      document.getElementById('cut').append(line, shot);
+      x += sw;
+    });
+  </script>
+</body>
+</html>
