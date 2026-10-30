@@ -11,7 +11,7 @@
  *
  * The log, format "openfilm-footage/1", every time in the clip's own seconds:
  *   { format, folder, clips: [{ id, file, duration, width, height, fps, audio, words,
- *       shots: [{ id, start, end, picture, said, same }] }], same: [[shot ids]] }
+ *       shots: [{ id, start, end, picture, said, same }] }], same: [[shot ids]], skipped: [files with no picture] }
  * A clip's id is a letter in file-name order (A, B … AA), a shot's the clip's id and its number (A1). `words` is the
  * WebVTT beside the clip (npx openfilm get asr --src <clip>) or null; `said` is what is said during the shot, null
  * without words. `same` lists the other shots whose middle frames look alike, in any clip: one of them is enough.
@@ -184,10 +184,14 @@ export async function logFootage(/** @type {string} */ folder, /** @type {{ out?
   const clips = [];
   /** @type {{ id: string, hash: string }[]} */
   const hashes = [];
-  for (const [n, f] of files.entries()) {
+  /** @type {string[]} */
+  const skipped = [];
+  for (const f of files) {
     const file = join(dir, f);
-    const id = clipId(n);
-    const facts = await probe(file);
+    // A file with no picture (sound only, or unreadable) is listed, not logged
+    const facts = await probe(file).catch(() => null);
+    if (!facts?.width || !(facts.duration > 0)) { skipped.push(f); log(`${f}: no picture, left out`); continue; }
+    const id = clipId(clips.length);
     const vtt = file.slice(0, -extname(file).length) + '.vtt';
     const words = existsSync(vtt) ? vttWords(readFileSync(vtt, 'utf8')) : null;
     const spans = shotsFrom(await sceneChanges(file, o.threshold ?? 0.3), facts.duration);
@@ -205,13 +209,14 @@ export async function logFootage(/** @type {string} */ folder, /** @type {{ out?
   }
   const same = alike(hashes);
   for (const g of same) for (const c of clips) for (const s of c.shots) if (g.includes(s.id)) s.same = g.filter((x) => x !== s.id);
-  const logData = { format: FORMAT, folder: relative(outDir, dir).replace(/\\/g, '/') || '.', clips, same };
+  const logData = { format: FORMAT, folder: relative(outDir, dir).replace(/\\/g, '/') || '.', clips, same, skipped };
   writeFileSync(join(outDir, 'footage.json'), `${JSON.stringify(logData, null, 1)}\n`);
   writeFileSync(join(outDir, 'footage.html'), page(logData));
   const shotsN = clips.reduce((n, c) => n + c.shots.length, 0);
   return [
     `${outDir}${process.platform === 'win32' ? '\\' : '/'}footage.json  ${clips.length} clips, ${shotsN} shots, ${clips.filter((c) => c.words).length} with words`,
     same.length ? `look alike: ${same.map((g) => g.join(' = ')).join(' · ')}` : 'no two shots look alike',
+    ...(skipped.length ? [`left out, no picture: ${skipped.join(', ')}`] : []),
     ...clips.filter((c) => c.audio && !c.words).map((c) => `${c.id} has sound and no words yet: npx openfilm get asr --src ${join(dir, c.file.split('/').pop() ?? '')}`),
   ];
 }

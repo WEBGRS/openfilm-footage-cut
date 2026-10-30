@@ -23,6 +23,8 @@ before(() => {
   ff(['-f', 'lavfi', '-i', 'mandelbrot=s=640x360:r=30', '-t', '3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(dir, 'B-city.mp4')]);
   // C: the same footage as A again
   copyFileSync(join(dir, 'A-walk.mp4'), join(dir, 'C-copy.mp4'));
+  // D: sound only, in an .mp4
+  ff(['-f', 'lavfi', '-i', 'sine=f=220:d=2', '-c:a', 'aac', join(dir, 'D-voice.mp4')]);
 });
 
 after(() => dir && rmSync(dir, { recursive: true, force: true }));
@@ -47,6 +49,8 @@ test('a folder logged: clips in name order, shots at the cut, words per shot, lo
   for (const id of ['A1', 'A2', 'B1', 'C1', 'C2']) assert.ok(existsSync(join(dir, 'footage-log', `${id}.jpg`)), id);
   assert.match(readFileSync(join(dir, 'footage-log', 'footage.html'), 'utf8'), /looks like C1/);
   assert.match(lines.join('\n'), /C has sound and no words yet/);
+  assert.deepEqual(log.skipped, ['D-voice.mp4']);
+  assert.match(lines.join('\n'), /left out, no picture: D-voice\.mp4/);
 });
 
 test('shots: no shot under 0.6 s, the last one runs to the end', () => {
