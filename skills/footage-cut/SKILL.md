@@ -33,6 +33,7 @@ shot's first, middle and last frame, its times, what is said in it, and which sh
 (`npx openfilm get asr --src <clip>`); say how many minutes that is before transcribing on a paid service. The
 narration is their recorded voice with its word times, or a script voiced with `npx openfilm get tts`. A shot is a
 clip of the film: its file trimmed with `#t=`. `look` checks the cut; anything you can make titles and maps with.
+With music, the beats to cut on are the `beat-cut` skill's `beats.mjs`, when it is installed.
 
 ## With the person
 

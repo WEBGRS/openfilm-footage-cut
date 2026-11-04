@@ -40,7 +40,9 @@ What the brief asks of the agent:
 - **In your own agent** (Claude Code, Codex and others): `npx skills add WEBGRS/openfilm-footage-cut`.
 
 It needs Node 22 or later and ffmpeg on the PATH (OpenFilm needs ffmpeg too). For clips with speech, a transcription
-service connected in OpenFilm (Settings → Providers).
+service connected in OpenFilm (Settings → Providers). With music, it pairs with
+[beat-cut](https://github.com/WEBGRS/openfilm-beat-cut), which measures the music's beats and bars and checks each cut
+against them.
 
 ## Develop
 
@@ -57,4 +59,4 @@ OpenFilm 技能：用你自己拍的素材剪成片。给它一个素材文件�
 
 需求书对智能体的要求：只用你的素材，只裁剪不重新编码，没你同意不生成、不下载；交片时附镜头表（哪句话、哪个镜头、拍的是什么），一个镜头只用一次，长得一样的算同一个；不用晃的、虚的、太暗的、有路人乱入的镜头，除非那是那一刻唯一的镜头，并且要说明；在解说的停顿和音乐的节拍上剪，素材里有人说话就只在停顿处剪，误差两帧以内；你的解说保持原样，不让素材里的人说他们没说过的话；用付费服务转写前先说要转写多少分钟；最后告诉你哪些句子没有合适的镜头、还该补拍什么。
 
-**安装**：在 OpenFilm 的技能页点「添加 skill」，粘贴链接 `https://github.com/WEBGRS/openfilm-footage-cut`；用自己的智能体就运行 `npx skills add WEBGRS/openfilm-footage-cut`。需要 Node 22 以上和 PATH 里的 ffmpeg；素材里有人说话的，还要在 OpenFilm 的设置（左上角的 OpenFilm 标志）→ 服务商里连好一个语音转写服务。
+**安装**：在 OpenFilm 的技能页点「添加 skill」，粘贴链接 `https://github.com/WEBGRS/openfilm-footage-cut`；用自己的智能体就运行 `npx skills add WEBGRS/openfilm-footage-cut`。需要 Node 22 以上和 PATH 里的 ffmpeg；素材里有人说话的，还要在 OpenFilm 的设置（左上角的 OpenFilm 标志）→ 服务商里连好一个语音转写服务。有音乐时和 [beat-cut](https://github.com/WEBGRS/openfilm-beat-cut)（测出音乐的拍子和小节，逐个检查剪辑点）配合使用。
