@@ -40,8 +40,8 @@ voice-over's pauses; when the voice-over's words differ from `--script`; when fo
 when nothing is on screen. A copy of a clip at the same moment on another track is a backdrop, not a repeat.
 
 In two trials on OpenFilm 0.3.0 it was not clearly better than the same agent with no skill. Its clip edges sat in
-pauses more often on speech, and it handed over a shot list; on narration its picture for one line was weaker. Music was
-not tried. The numbers are in [evals](evals/README.md).
+pauses more often on speech, and it handed over a shot list; the narration films were about equal, and only the one
+without the skill was rendered. Music was not tried. The numbers are in [evals](evals/README.md).
 
 What the brief asks of the agent:
 
@@ -81,7 +81,7 @@ OpenFilm 技能：用你自己拍的素材剪成片。给它一个素材文件�
 
 剪完后用 `node skills/footage-cut/scripts/footage.mjs check film.html [--script 文案.txt]` 检查：`film.html` 是空的或里面没有素材、视频不是记录过的原文件、同一个人的句子顺序被打乱、素材边缘离停顿超过两帧或剪在一句话中间、同一段画面出现两次、剪点不在配音的停顿上、配音的字和文案不一致、素材里的人声盖住配音、画面空了，都会让它以 1 退出，并在最后写明该怎么改。
 
-在 OpenFilm 0.3.0 上的两次试验里，它没有明显好过不用技能的同一个智能体：剪人说话时素材边缘更常落在停顿里，还多交一份镜头表；剪解说时有一句的画面更弱。没有试过配音乐。数字见 [evals](evals/README.md)。
+在 OpenFilm 0.3.0 上的两次试验里，它没有明显好过不用技能的同一个智能体：剪人说话时素材边缘更常落在停顿里，还多交一份镜头表；剪解说时两条片子差不多，只有不用技能的那条导出了成片。没有试过配音乐。数字见 [evals](evals/README.md)。
 
 需求书对智能体的要求：只用你的素材，只裁剪不重新编码，没你同意不生成、不下载；交片时附镜头表（哪句话、哪个镜头、拍的是什么），一个镜头只用一次，长得一样的算同一个；不用晃的、虚的、太暗的、有路人乱入的镜头，除非那是那一刻唯一的镜头，并且要说明；在解说的停顿和音乐的节拍上剪，素材里有人说话就只在停顿处剪，误差两帧以内；你的解说保持原样，不让素材里的人说他们没说过的话；用付费服务转写前先说要转写多少分钟；最后告诉你哪些句子没有合适的镜头、还该补拍什么。
 
