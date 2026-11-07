@@ -103,3 +103,7 @@ gaps in the transcripts and calls about 14% of word middles quiet (138 of 981), 
 cuts in an MP4 come from ffmpeg's scene score at 0.3. To run it again, download the clips from Commons by the names above;
 the media stays out of this repository. The "joins" row came from transcribing each finished film with faster-whisper
 large-v3 and reading every join against the source transcript.
+
+## On OpenFilm 0.3.0
+
+After the trials, a copy of 0.1.2's project from the speech request was run on the released OpenFilm 0.3.0 (Windows 11, 2026-11-06), without an agent and not in Studio. `look` passed. A 4 s `render` and `render --subtitles` both came out, and the second showed the subtitles. The narration request left `film.html` empty, so it had no project to run.
