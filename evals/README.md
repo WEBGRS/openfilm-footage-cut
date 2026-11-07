@@ -82,7 +82,7 @@ Earlier rows, kept for what the fixes changed. Both ran in a project with OpenFi
 | joins with a word lost or a sentence stopped or spliced, read from the film re-transcribed | 5 of 9 | 2 of 7 |
 | narration request: `film.html` (with 0.1.1) | empty, an MP4 built with ffmpeg | empty, an MP4 built with ffmpeg |
 
-0.1.2 moved one speaker's lines out of order, so the film has her say a sentence she did not say. `check` now fails that (a test builds it), and neither 0.2.x film has a clip out of order. The empty `film.html` did not come back in any arm on 0.3.0.
+0.1.2 moved one speaker's lines out of order, so the film has that speaker say a sentence they did not say. `check` now fails that (a test builds it), and neither 0.2.x film has a clip out of order. The empty `film.html` did not come back in any arm on 0.3.0.
 
 ## Measures
 
