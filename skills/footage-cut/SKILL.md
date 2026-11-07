@@ -11,29 +11,37 @@ screen because of what is being said at that moment, in an order a viewer follow
 ## What defines it
 
 Every shot is there for the words it sits under. Clips laid in the order they were filmed, or shots picked to fill
-the time, are not this, however good each shot is.
+the time, are not this, however good each shot is. The film is `film.html`, every shot a clip in it, so the person
+can open it in Studio and change a shot: an MP4 you made with ffmpeg beside an empty `film.html` is not their film.
 
 ## What has to be true
 
-- **Only their footage**, trimmed, never re-encoded; nothing generated or downloaded unless they ask for it.
+- **Only their footage**, each shot their own file trimmed with `#t=`, never re-encoded or cut into new files;
+  nothing generated or downloaded unless they ask for it.
 - **Each line has its shot, and you can say why.** Keep a shot list (the line, the shot, what it shows) and hand it
   over. A shot is used once, and shots that look alike count as one, unless repeating is the point.
 - **Usable shots.** Nothing shaky, out of focus, too dark or crossed by a stranger, unless it is the only shot of
   its moment, and then say so. Check the frames you use.
 - **Cuts where they belong**: on the narration's pauses, on the beat where there is music, and inside the footage's
-  own speech only in its pauses, each within two frames, by the word times.
-- **Their words as they are.** The narration as they recorded or wrote it; people in the footage are not made to say
-  what they did not.
+  own speech only in its pauses, each within two frames, taking sentences whole.
+- **Their words as they are.** The narration as they recorded or wrote it. People in the footage keep their
+  sentences in the order they said them, and are not made to say what they did not.
 
 ## What you have
 
-`node <this skill's folder>/scripts/footage.mjs <folder>` logs every clip in a folder, shot by shot: a picture of each
-shot's first, middle and last frame, its times, what is said in it, and which shots in any clip look alike, in
-`footage-log/footage.json` and `footage.html`. Clips with speech need their transcript first
+`node <this skill's folder>/scripts/footage.mjs <folder>` logs every clip in a folder, shot by shot: a picture of
+each shot's first, middle and last frame, its times, what is said in it, and which shots in any clip look alike, in
+`footage-log/footage.json` and `footage.html`. For a clip that speaks it lists the sentences, each with `in` and `out`
+points inside the pauses around it: cut there. Clips with speech need their transcript first
 (`npx openfilm get asr --src <clip>`); say how many minutes that is before transcribing on a paid service. The
-narration is their recorded voice with its word times, or a script voiced with `npx openfilm get tts`. A shot is a
-clip of the film: its file trimmed with `#t=`. `look` checks the cut; anything you can make titles and maps with.
-With music, the beats to cut on are the `beat-cut` skill's `beats.mjs`, when it is installed.
+narration is their recorded voice with its word times, or a script voiced by the service they name: `npx openfilm get`
+lists every service connected here, their own included. A shot is a clip of the film: its file, copied into the
+project as it is. `look` checks the cut. With music, the beats to cut on
+are the `beat-cut` skill's `beats.mjs`, when it is installed.
+
+`node <this skill's folder>/scripts/footage.mjs check film.html [--script script.txt]` reads the film against the
+log, the words beside each clip and the narration, and exits 1 on what it finds. It prints last what to do. Run it
+until it passes, before you hand over; `--list` prints the shot list's skeleton.
 
 ## With the person
 

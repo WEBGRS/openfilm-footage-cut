@@ -49,6 +49,7 @@ test('a folder logged: clips in name order, shots at the cut, words per shot, lo
   for (const id of ['A1', 'A2', 'B1', 'C1', 'C2']) assert.ok(existsSync(join(dir, 'footage-log', `${id}.jpg`)), id);
   assert.match(readFileSync(join(dir, 'footage-log', 'footage.html'), 'utf8'), /looks like C1/);
   assert.match(lines.join('\n'), /C has sound and no words yet/);
+  assert.match(lines.at(-2), /npx openfilm get lists the services connected here/);
   assert.deepEqual(log.skipped, ['D-voice.mp4']);
   assert.match(lines.join('\n'), /left out, no picture: D-voice\.mp4/);
 });

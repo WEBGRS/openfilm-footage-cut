@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // The same measure for any finished film, read from film.html and the sound of its files.
-//   node evals/measure.mjs <film.html> [--script script.txt] [--json]
+//   node evals/measure.mjs <film.html> [--script script.txt] [--clips <their clips folder>] [--audio <out.wav>] [--json]
 //   node evals/measure.mjs --render-only --mp4 <film.mp4> [--frames <dir>]     a film with no film.html behind it
+// --clips lists the footage files used that are not among their clips by name and size; --audio writes the film's
+// sound, mixed from film.html, for transcribing without a render.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { dHash, distance, vttWords } from '../skills/footage-cut/scripts/footage.mjs';
 
@@ -12,7 +14,7 @@ const TWO = 2 / FPS;
 const PAUSE = 0.12;
 const args = process.argv.slice(2);
 const take = (f) => { const i = args.indexOf(f); return i < 0 ? undefined : args.splice(i, 2)[1]; };
-const scriptFile = take('--script'), framesDir = take('--frames'), mp4 = take('--mp4');
+const scriptFile = take('--script'), framesDir = take('--frames'), mp4 = take('--mp4'), clipsDir = take('--clips'), audioOut = take('--audio');
 const asJson = args.includes('--json');
 const film = resolve(args.find((a) => !a.startsWith('--')) ?? 'film.html');
 const dir = dirname(film);
@@ -194,12 +196,14 @@ r.pastEnd = [];
 for (const v of videos) { const L = await length(v.full); if (v.to > L + 0.001) r.pastEnd.push(`${basename(v.file)} ${v.to}>${r3(L)}`); }
 r.speeds = videos.filter((v) => v.speed !== 1).map((v) => `${basename(v.file)} x${v.speed}`);
 
-// Footage repeated: the same seconds of a file on screen twice, and clips whose middle frames look alike
+// Footage repeated: the same seconds of a file on screen twice, and clips whose middle frames look alike. A copy at
+// the same moment on another track is a backdrop, not a repeat.
+const together = (a, b) => Math.min(a.end, b.end) - Math.max(a.at, b.at) > 0.05;
 let repeated = 0;
 const repeats = [];
 for (let i = 0; i < videos.length; i++) for (let j = i + 1; j < videos.length; j++) {
   const a = videos[i], b = videos[j];
-  if (a.full !== b.full) continue;
+  if (a.full !== b.full || together(a, b)) continue;
   const o = Math.min(a.to, b.to) - Math.max(a.from, b.from);
   if (o > 0.04) { repeated += o; repeats.push(`${basename(a.file)} ${r3(Math.max(a.from, b.from))}-${r3(Math.min(a.to, b.to))}`); }
 }
@@ -208,7 +212,7 @@ r.repeats = repeats;
 for (const v of videos) { try { v.hash = await frameHash(v.full, (v.from + v.to) / 2); } catch { v.hash = null; } }
 const alike = [];
 for (let i = 0; i < videos.length; i++) for (let j = i + 1; j < videos.length; j++) {
-  if (videos[i].hash && videos[j].hash && distance(videos[i].hash, videos[j].hash) <= 6) alike.push(`#${i + 1} ${basename(videos[i].file)} = #${j + 1} ${basename(videos[j].file)}`);
+  if (!together(videos[i], videos[j]) && videos[i].hash && videos[j].hash && distance(videos[i].hash, videos[j].hash) <= 6) alike.push(`#${i + 1} ${basename(videos[i].file)} = #${j + 1} ${basename(videos[j].file)}`);
 }
 r.lookAlike = alike;
 
@@ -298,8 +302,57 @@ if (videos.some((v) => v.words)) {
   };
 }
 
+// How blurred the footage the film uses is, by ffmpeg's blurdetect on each clip's own seconds (lower is sharper):
+// the film-time weighted mean, and the blurriest clip
+{
+  const done = [];
+  const perSecond = new Map();
+  for (const v of videos.filter((x, i) => !videos.slice(0, i).some((p) => p.full === x.full && together(p, x)))) {
+    const log = await new Promise((ok) => {
+      const p = spawn('ffmpeg', ['-hide_banner', '-nostats', '-ss', String(v.from), '-t', String(v.to - v.from), '-i', v.full, '-an', '-vf', 'scale=640:-2,format=gray,blurdetect,metadata=print', '-f', 'null', '-'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+      let e = '';
+      p.stderr.on('data', (b) => { e += b; });
+      p.on('close', () => ok(e));
+    });
+    const vals = [];
+    let t = 0;
+    for (const line of log.split('\n')) {
+      const a = /pts_time:([\d.]+)/.exec(line);
+      if (a) t = Number(a[1]);
+      const b = /lavfi\.blur=([\d.]+)/.exec(line);
+      if (b) {
+        vals.push(Number(b[1]));
+        const k = Math.floor(v.at + t);
+        perSecond.set(k, [...(perSecond.get(k) ?? []), Number(b[1])]);
+      }
+    }
+    if (vals.length) done.push({ at: v.at, file: basename(v.file), from: v.from, len: v.end - v.at, blur: vals.reduce((a, b) => a + b, 0) / vals.length });
+  }
+  const total = done.reduce((s, d) => s + d.len, 0);
+  const worst = done.reduce((a, b) => (b.blur > a.blur ? b : a), { blur: 0 });
+  // Film seconds whose frames are blurred past 8: a whip pan or a smeared crowd
+  const secs = [...perSecond].map(([k, v]) => [k, v.reduce((a, b) => a + b, 0) / v.length]);
+  const blurry = secs.filter(([, b]) => b > 8).map(([k, b]) => `${k} s (${r3(b)})`);
+  r.blurSeconds = { over8: blurry.length, which: blurry, worst: secs.length ? secs.reduce((a, b) => (b[1] > a[1] ? b : a)).map(r3) : null };
+  r.blur = { mean: r3(done.reduce((s, d) => s + d.blur * d.len, 0) / (total || 1)), worst: { file: worst.file, from: worst.from, at: r3(worst.at ?? 0), blur: r3(worst.blur) } };
+}
+
 // New video files in the project: footage made again rather than trimmed
 r.videoFilesUsed = [...new Set(videos.map((v) => v.file))];
+if (clipsDir) {
+  const theirs = new Map(readdirSync(clipsDir).filter((f) => /\.(webm|mp4|mov|mkv)$/i.test(f)).map((f) => [f, statSync(join(clipsDir, f)).size]));
+  r.notTheirs = r.videoFilesUsed.filter((f) => theirs.get(basename(f)) !== statSync(join(dir, f)).size);
+}
+
+// The film's sound mixed from film.html: every sound clip and every unmuted video's own sound, at its place
+if (audioOut) {
+  const src = all.filter((c) => c.exists && (c.tag === 'audio' || (c.tag === 'video' && !c.muted && c.volume > 0)));
+  const inputs = src.flatMap((c) => ['-i', c.full]);
+  const chains = src.map((c, i) => `[${i}:a]atrim=start=${c.from}:end=${c.to},asetpts=PTS-STARTPTS,volume=${c.volume},adelay=${Math.round(c.at * 1000)}:all=1[a${i}]`);
+  const mix = `${src.map((_, i) => `[a${i}]`).join('')}amix=inputs=${src.length}:normalize=0:duration=longest[out]`;
+  await run('ffmpeg', ['-v', 'error', '-y', ...inputs, '-filter_complex', `${chains.join(';')};${mix}`, '-map', '[out]', '-ac', '1', '-ar', '16000', resolve(audioOut)]);
+  r.audio = resolve(audioOut);
+}
 
 // A frame from the render at the middle of each voice sentence and of each shot
 if (framesDir && mp4) {
@@ -314,6 +367,8 @@ r.shots = videos.map((v, i) => `${i + 1}. ${r3(v.at)}-${r3(v.end)} ${basename(v.
 if (asJson) console.log(JSON.stringify(r, null, 1));
 else {
   console.log(`length ${r.length} s, ${r.clips.video} footage clips, ${r.clips.audio} sounds, ${r.clips.page} pages, ${r.clips.picture} pictures; no footage ${r.noFootage} s; past end ${r.pastEnd.length}; speed changes ${r.speeds.length}`);
+  console.log(`blurred film seconds (over 8): ${r.blurSeconds.over8} ${r.blurSeconds.which.join(', ')}; blurriest second at ${r.blurSeconds.worst?.[0]} s (${r.blurSeconds.worst?.[1]})`);
+  console.log(`blur of the footage used: mean ${r.blur.mean}, blurriest ${r.blur.worst.file} from ${r.blur.worst.from} s at film ${r.blur.worst.at} s (${r.blur.worst.blur})`);
   console.log(`same footage twice ${r.repeatedSeconds} s (${r.repeats.length}); clips that look alike ${r.lookAlike.length}`);
   if (r.voice) console.log(`cuts on the voice's pauses ${r.voice.cutsOnPause}/${r.cuts}, median ${r.voice.cutsMedianFrames} frames off, worst ${r.voice.cutsWorstFrames}; script distance ${r.voice.vttDistanceFromScript ?? 'n/a'} of ${r.voice.scriptChars ?? 'n/a'} chars`);
   if (r.speech) console.log(`clip edges in pauses ${r.speech.onPause}/${r.speech.edges}, median ${r.speech.medianFrames} frames off, worst ${r.speech.worstFrames}; clips earlier in their file than one before them ${r.speech.backInTime}; ${JSON.stringify(r.speech.secondsBySpeaker)}`);
