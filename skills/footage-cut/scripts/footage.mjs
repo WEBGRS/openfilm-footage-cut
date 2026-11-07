@@ -150,7 +150,15 @@ async function probe(/** @type {string} */ file) {
   const j = JSON.parse(String(out));
   const v = j.streams.find((/** @type {any} */ s) => s.codec_type === 'video');
   const [n, d] = String(v?.avg_frame_rate ?? '0/1').split('/').map(Number);
-  return { duration: Number(j.format?.duration) || 0, width: v?.width ?? 0, height: v?.height ?? 0, fps: d ? round(n / d) : 0, audio: j.streams.some((/** @type {any} */ s) => s.codec_type === 'audio') };
+  const fps = d ? n / d : 0;
+  let duration = Number(j.format?.duration) || 0;
+  if (v) {
+    // The sound can run on after the last frame: a shot ends with the picture
+    const { out: stamps } = await run('ffprobe', ['-v', 'error', '-select_streams', 'v', '-show_entries', 'packet=pts_time', '-of', 'csv=p=0', file]);
+    const last = String(stamps).split(/\s+/).map(Number).filter(Number.isFinite).reduce((a, b) => Math.max(a, b), 0);
+    if (last > 0) duration = Math.min(duration, last + (fps ? 1 / fps : 0));
+  }
+  return { duration, width: v?.width ?? 0, height: v?.height ?? 0, fps: round(fps), audio: j.streams.some((/** @type {any} */ s) => s.codec_type === 'audio') };
 }
 
 async function sceneChanges(/** @type {string} */ file, /** @type {number} */ threshold) {

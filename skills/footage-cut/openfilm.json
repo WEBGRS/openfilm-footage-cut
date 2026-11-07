@@ -1,10 +1,17 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.2",
   "repository": "https://github.com/WEBGRS/openfilm-footage-cut/tree/main/skills/footage-cut",
   "kind": "workflow",
   "order": 24,
   "icon": "scissors",
   "cover": "cover.jpg",
+  "needs": {
+    "en": "FFmpeg on your PATH. A transcription service for clips with speech; a voice-over service to voice a written script.",
+    "zh-CN": "PATH 里的 FFmpeg。素材里有人说话，需要连一个语音转写服务；文案要配音，需要连一个配音服务。",
+    "ja": "PATH 上の FFmpeg。話し声のある素材には文字起こしサービス、原稿を読み上げるにはナレーションサービスが必要です。",
+    "ko": "PATH에 있는 FFmpeg. 말소리가 있는 클립에는 음성 인식 서비스, 대본을 읽게 하려면 내레이션 서비스가 필요합니다.",
+    "es": "FFmpeg en el PATH. Un servicio de transcripción para clips con voz; un servicio de locución para poner voz a un guion."
+  },
   "title": {
     "en": "Cut my footage",
     "zh-CN": "素材剪成片",

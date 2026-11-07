@@ -53,6 +53,20 @@ test('a folder logged: clips in name order, shots at the cut, words per shot, lo
   assert.match(lines.join('\n'), /left out, no picture: D-voice\.mp4/);
 });
 
+test('sound that runs on after the picture: the log ends with the picture', async () => {
+  const folder = mkdtempSync(join(tmpdir(), 'footage-tail-'));
+  try {
+    ff(['-f', 'lavfi', '-i', 'testsrc2=s=320x180:r=30:d=2', '-f', 'lavfi', '-i', 'sine=f=440:d=3.5', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', join(folder, 'tail.mp4')]);
+    await logFootage(folder, { log: () => undefined });
+    const { clips: [clip] } = JSON.parse(readFileSync(join(folder, 'footage-log', 'footage.json'), 'utf8'));
+    assert.ok(Math.abs(clip.duration - 2) < 0.05, `duration ${clip.duration}`);
+    assert.ok(Math.abs(clip.shots.at(-1).end - 2) < 0.05, `end ${clip.shots.at(-1).end}`);
+    assert.ok(existsSync(join(folder, 'footage-log', 'A1.jpg')));
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+
 test('shots: no shot under 0.6 s, the last one runs to the end', () => {
   assert.deepEqual(shotsFrom([2, 2.3, 5.8], 6), [[0, 2], [2, 6]]);
   assert.deepEqual(shotsFrom([], 0.4), [[0, 0.4]]);
